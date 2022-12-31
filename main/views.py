@@ -25,36 +25,46 @@ def index(request):
         @bot.message_handler(commands=['start'])
         def start(message):
             global register
+            plus = False
             user = User.objects.get_or_create(chat_id=message.chat.id)
             sp = (message.text).split()
-            if len(sp) == 2:
-                links = User.objects.filter(user_id=sp[1])
-                if links:
-                    link_user = User.objects.get(user_id=sp[1])
-                    if link_user.name == user[0].name:
-                        bot.send_message(message.chat.id, 'Нельзя переходить по своей же ссылке!')
-                        return
-                    bot.send_message(message.chat.id, f'Ты перешёл по пригласительной ссылке пользователя {link_user.name}!')
-                    link_user.count_link = link_user.count_link + 1
-                    link_user.save()
-                else:
-                    bot.send_message(message.chat.id, 'Неверный код приглашения! Проверь правильность ввода!')
-                    return
             if user[0].name:
                 bot.send_message(message.chat.id, f'Привет, {message.chat.username}!')
             elif message.chat.username:
+                if len(sp) == 2:
+                    links = User.objects.filter(user_id=sp[1])
+                    if links:
+                        link_user = User.objects.get(user_id=sp[1])
+                        if link_user.name == user[0].name:
+                            bot.send_message(message.chat.id, 'Нельзя переходить по своей же ссылке!')
+                            return
+                        bot.send_message(message.chat.id, f'Ты перешёл по пригласительной ссылке пользователя {link_user.name}!')
+                        link_user.count_link = link_user.count_link + 1
+                        plus = True
+                        link_user.save()
+                    else:
+                        bot.send_message(message.chat.id, 'Неверный код приглашения! Проверь правильность ввода!')
+                        return
                 test_user = User.objects.filter(name=message.chat.username)
                 if not test_user:
                     bot.send_message(message.chat.id, f'Привет, {message.chat.username}! Приятно познакомиться!')
                     user[0].name = message.chat.username
+                    if plus:
+                        user[0].score = user[0].score + 3
                     user[0].save()
                     bot.send_message(message.chat.id, 'Напиши /help для информации о командах!')
                 else:
                     bot.send_message(message.chat.id, f'Привет! Давай знакомиться! Придумай свой ник, а я проверю, чтобы твоё имя было уникальным.')
                     register = True
+                    if plus:
+                        user[0].score = user[0].score + 3
+                        user[0].save()
             else:
                 bot.send_message(message.chat.id, f'Привет! Давай знакомиться! Придумай свой ник, а я проверю, чтобы твоё имя было уникальным.')
                 register = True
+                if plus:
+                    user[0].score = user[0].score + 3
+                    user[0].save()
 
         
         @bot.message_handler(commands=['link_info'])
@@ -75,14 +85,28 @@ def index(request):
                         add = int(13 * (ch / 8))
                         user.score = user.score + add
                         user.save()
-                        bot.send_message(message.chat.id, f'Тебе добавилось {add} очков (очка). Поздравляю!')
+                        mes = ''
+                        if add == 1:
+                            mes = f'Тебе добавилось {add} очка. Поздравляю!'
+                        elif add >= 2 and add <= 4:
+                            mes = f'Тебе добавилось {add} очка. Поздравляю!'
+                        else:
+                            mes = f'Тебе добавилось {add} очков. Поздравляю!'
+                        bot.send_message(message.chat.id, mes)
                     else:
                         bot.send_message(message.chat.id, 'Я тебя не совсем понимаю! Проверьте правильность ввода!')
                 else:
                     link_number = user.count_link
+                    mes = ''
+                    if link_number == 1:
+                        mes = f'По твоей ссылке перёл и зарегистрировался {link_number} человек.'
+                    elif link_number >= 2 and link_number <= 4:
+                        mes = f'По твоей ссылке перешло и зарегистрировалось {link_number} человека.'
+                    else:
+                        mes = f'По твоей ссылке перешло и зарегистрировалось {link_number} человек.'
                     bot.send_message(
                         message.chat.id,
-                        f'По твоей ссылке перешло и зарегистрировалось {link_number} человек (человека).'
+                        mes
                     )
                     if link_number >= 8:
                         bot.send_message(message.chat.id, 'У тебя хватает для вывода очков. Напиши /link_info и через пробел Yes если хочешь вывести')
@@ -113,7 +137,7 @@ def index(request):
             if users:
                 bot.send_message(
                     message.chat.id,
-                    'Это игра, в которой тебе нужно угадать число, которое загадал бот. Числа будут от 1 до 2. Ты можешь поставить ставку. Если ты выйграешь, то тебе начислятся твоя ставка и плюс 1 очко, а если проиграешь, то отнимуться! Если у тебя нет очков, то ставь 0! Удачи!'
+                    'Это игра, в которой тебе нужно угадать число, которое загадал бот. Числа будут от 1 до 3. Ты можешь поставить ставку. Если ты выйграешь, то тебе начислятся твоя ставка и плюс 1 очко, а если проиграешь, то отнимуться! Если у тебя нет очков, то ставь 0! Удачи!'
                 )
                 sleep(2)
                 bot.send_message(message.chat.id, 'Я загадал! Сообщением напиши число, а потом, через пробел, ставку!')
@@ -126,9 +150,17 @@ def index(request):
             users = User.objects.filter(chat_id=message.chat.id)
             if users:
                 user = User.objects.get(chat_id=message.chat.id)
+                mes = ''
+                if user.score == 1:
+                    mes = f'У тебя {user.score} балл! Ты молодчина!!'
+                elif user.score >= 2 and user.score <= 4:
+                    mes = f'У тебя {user.score} балла! Ты молодчина!!'
+                else:
+                    mes = f'У тебя {user.score} баллов! Ты молодчина!!'
+
                 bot.send_message(
                     message.chat.id,
-                    f'У тебя {user.score} очков (очка/очко)! Ты молодчина!!'
+                    mes
                 )
             else:
                 bot.send_message(message.chat.id, 'Ты не зарегистрирован! Напиши /start для регистрации.')
@@ -173,7 +205,7 @@ def index(request):
             elif len(users) == 2:
                 otv = f'''
                 🥇 Первое место: {users[0].name}. Рейтинг: {users[0].score}.
-                🥈 Вторе место: {users[1].name}. Рейтинг: {users[1].score}.
+🥈 Вторе место: {users[1].name}. Рейтинг: {users[1].score}.
                 '''
             elif len(users) == 1:
                 otv = f'''
@@ -195,6 +227,7 @@ def index(request):
                     user.name = name
                     user.save()
                     bot.send_message(message.chat.id, f'Привет, {user.name}! Приятно познакомиться!')
+                    bot.send_message(message.chat.id, 'Напиши /help для информации о командах!')
                     register = False
                 else:
                     bot.send_message(message.chat.id, 'Такое имя занято! Придумай другое!')
@@ -202,7 +235,7 @@ def index(request):
                 users = User.objects.filter(chat_id=message.chat.id)
                 if users:
                     user = User.objects.get(chat_id=message.chat.id)
-                    correct_number = rnd.randint(1, 2)
+                    correct_number = rnd.randint(1, 3)
                     a = (message.text).split()
                     if len(a) < 2:
                         bot.send_message(message.chat.id, 'Ты указал только одно! Нужно указывать и ответ и ставку! Поробуй ещё раз!')
@@ -213,19 +246,35 @@ def index(request):
                     except ValueError:
                         bot.send_message(message.chat.id, 'Ставка или ответ не являются числами! Проверь и поробуй ещё раз!')
                         return
-                    if otv < 1 or otv > 2:
-                        bot.send_message(message.chat.id, 'Введённый ответ меньше 1 или больше 2! Проверь и попробуй ещё раз!')
+                    if otv < 1 or otv > 3:
+                        bot.send_message(message.chat.id, 'Введённый ответ меньше 1 или больше 3! Проверь и попробуй ещё раз!')
                         return
                     score = user.score
                     if bid > score:
                         bot.send_message(message.chat.id, f'У тебя {user.score} очков (очка), а ты поставил {bid}! Поставь меньше!')
                         return
                     if otv == correct_number:
-                        bot.send_message(message.chat.id, f'Ты выйрал! Теперь у тебя {score + bid + 1} очков (очка)! Поздравляю! Давай сыграем ещё раз?')
+                        mes = ''
+                        if score + bid + 1 == 1:
+                            mes = f'Ты выйрал! Теперь у тебя {score + bid + 1} балл! Поздравляю! Давай сыграем ещё раз?'
+                        elif score + bid + 1 >= 2 and score + bid + 1 <= 4:
+                            mes = f'Ты выйрал! Теперь у тебя {score + bid + 1} балла! Поздравляю! Давай сыграем ещё раз?'
+                        else:
+                            mes = f'Ты выйрал! Теперь у тебя {score + bid + 1} баллов! Поздравляю! Давай сыграем ещё раз?'
+                        bot.send_message(message.chat.id, mes)
+                        bot.send_message(message.chat.id, 'Я загадал! Сообщением напиши число, а потом, через пробел, ставку!')
                         user.score = score + bid + 1
                         user.save()
                     else:
-                        bot.send_message(message.chat.id, f'Ты не угадал! Правильный ответ был {correct_number}. Теперь у тебя {score - bid} очков (очка)! Попробуй ещё раз!')
+                        mes = ''
+                        if score - bid == 1:
+                            mes = f'Ты не угадал! Правильный ответ был {correct_number}. Теперь у тебя {score - bid} балл! Попробуй ещё раз!'
+                        elif score - bid >= 2 and score - bid <= 4:
+                            mes = f'Ты не угадал! Правильный ответ был {correct_number}. Теперь у тебя {score - bid} балла! Попробуй ещё раз!'
+                        else:
+                            mes = f'Ты не угадал! Правильный ответ был {correct_number}. Теперь у тебя {score - bid} баллов! Попробуй ещё раз!'
+                        bot.send_message(message.chat.id, mes)
+                        bot.send_message(message.chat.id, 'Я загадал! Сообщением напиши число, а потом, через пробел, ставку!')
                         user.score = score - bid
                         user.save()
                 else:
