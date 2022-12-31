@@ -3,6 +3,8 @@ import telebot
 from .models import User
 from time import sleep
 import random as rnd
+
+
 register = False
 token = '5483780994:AAEbxwH96hNEMT22-b4foF46bn69ocrxlJY'
 bot = telebot.TeleBot(token)
@@ -15,6 +17,8 @@ HELP = '''
 /score - Количество твоих очков
 /rating - ТОП игроки
 '''
+
+
 def index(request):
     while True:
         @bot.message_handler(commands=['help'])
@@ -251,7 +255,14 @@ def index(request):
                         return
                     score = user.score
                     if bid > score:
-                        bot.send_message(message.chat.id, f'У тебя {user.score} очков (очка), а ты поставил {bid}! Поставь меньше!')
+                        mes = ''
+                        if user.score == 1:
+                            mes = f'У тебя {user.score} балл, а ты поставил {bid}! Поставь меньше!'
+                        elif user.score >= 2 and user.score <= 4:
+                            mes = f'У тебя {user.score} балла, а ты поставил {bid}! Поставь меньше!'
+                        else:
+                            mes = f'У тебя {user.score} баллов, а ты поставил {bid}! Поставь меньше!'
+                        bot.send_message(message.chat.id, mes)
                         return
                     if otv == correct_number:
                         mes = ''
