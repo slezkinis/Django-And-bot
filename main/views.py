@@ -141,7 +141,7 @@ def index(request):
             if users:
                 bot.send_message(
                     message.chat.id,
-                    'Это игра, в которой тебе нужно угадать число, которое загадал бот. Числа будут от 1 до 3. Ты можешь поставить ставку. Если ты выйграешь, то тебе начислятся твоя ставка и плюс 1 очко, а если проиграешь, то отнимуться! Если у тебя нет очков, то ставь 0! Удачи!'
+                    'Это игра, в которой тебе нужно угадать число, которое загадал бот. Числа будут от 1 до 3. Ты можешь поставить ставку. Если ты выиграешь, то тебе начислятся твоя ставка и плюс 1 очко, а если проиграешь, то отнимутся! Если у тебя нет очков, то ставь 0! Удачи!'
                 )
                 sleep(2)
                 bot.send_message(message.chat.id, 'Я загадал! Сообщением напиши число, а потом, через пробел, ставку!')
@@ -174,10 +174,14 @@ def index(request):
         def send_all(message):
             if int(message.chat.id) == 1509726530:
                 mes = (message.text).split()
-                otprv = mes[1:]
+                otprv = str(mes[1:])
+                otprv = otprv.replace('[', '').replace(']', '').replace(',', '').replace("'", "")
                 for user in User.objects.all():
-                    bot.send_message(user.chat_id, '❗️Уведомление:❗️')
-                    bot.send_message(user.chat_id, otprv)
+                    try:
+                        bot.send_message(user.chat_id, '❗️Уведомление:❗️')
+                        bot.send_message(user.chat_id, otprv)
+                    except telebot.apihelper.ApiTelegramException:
+                        continue
                 bot.send_message('1509726530',f"Рассылка отправлена {len(User.objects.all())} пользователям (пользователю)")
             else:
                 bot.send_message(message.chat.id, 'Вы не создатель!! Вам сюда лезть не надо:)')
@@ -189,9 +193,15 @@ def index(request):
                 mes = (message.text).split()
                 chat_id = int(mes[1])
                 user = User.objects.get(chat_id=chat_id)
-                otprv = mes[2:]
-                bot.send_message(user.chat_id, '❗️ Личное уведомление:❗️')
-                bot.send_message(user.chat_id, otprv)
+                otprv = str(mes[2:])
+                otprv = otprv.replace('[', '').replace(']', '').replace(',', '').replace("'", "")
+                try:
+                    bot.send_message(user.chat_id, '❗️ Личное уведомление:❗️')
+                    bot.send_message(user.chat_id, otprv)
+                except:
+                    bot.send_message('1509726530',f"!!Рассылка не отправлена пользователю {user.name}")
+                    return
+                sleep(1)
                 bot.send_message('1509726530',f"Рассылка отправлена пользователю {user.name}")
             else:
                 bot.send_message(message.chat.id, 'Вы не создатель!! Вам сюда лезть не надо:)')
@@ -267,11 +277,11 @@ def index(request):
                     if otv == correct_number:
                         mes = ''
                         if score + bid + 1 == 1:
-                            mes = f'Ты выйрал! Теперь у тебя {score + bid + 1} балл! Поздравляю! Давай сыграем ещё раз?'
+                            mes = f'Ты выирал! Теперь у тебя {score + bid + 1} балл! Поздравляю! Давай сыграем ещё раз?'
                         elif score + bid + 1 >= 2 and score + bid + 1 <= 4:
-                            mes = f'Ты выйрал! Теперь у тебя {score + bid + 1} балла! Поздравляю! Давай сыграем ещё раз?'
+                            mes = f'Ты выирал! Теперь у тебя {score + bid + 1} балла! Поздравляю! Давай сыграем ещё раз?'
                         else:
-                            mes = f'Ты выйрал! Теперь у тебя {score + bid + 1} баллов! Поздравляю! Давай сыграем ещё раз?'
+                            mes = f'Ты выирал! Теперь у тебя {score + bid + 1} баллов! Поздравляю! Давай сыграем ещё раз?'
                         bot.send_message(message.chat.id, mes)
                         bot.send_message(message.chat.id, 'Я загадал! Сообщением напиши число, а потом, через пробел, ставку!')
                         user.score = score + bid + 1
