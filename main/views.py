@@ -260,6 +260,12 @@ def index(request):
                     except ValueError:
                         bot.send_message(message.chat.id, 'Ставка или ответ не являются числами! Проверь и поробуй ещё раз!')
                         return
+                    if bid < 0:
+                        bot.send_message(message.chat.id, "Ставка не может быть отрицательной")
+                        return
+                    if bid == 0 and user.score != 0:
+                        bot.send_message(message.chat.id, "Неверная ставка")
+                        return
                     if otv < 1 or otv > 3:
                         bot.send_message(message.chat.id, 'Введённый ответ меньше 1 или больше 3! Проверь и попробуй ещё раз!')
                         return
