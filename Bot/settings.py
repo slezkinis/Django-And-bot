@@ -17,7 +17,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'REPLACE_ME')
 DEBUG =  os.getenv('DEBUG', 'true').lower() in ['yes', '1', 'true']
 
 ALLOWED_HOSTS = ['*']
-
+TOKEN = os.getenv('TOKEN')
 
 # Application definition
 
