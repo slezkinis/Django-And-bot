@@ -13,7 +13,7 @@ class Command(BaseCommand):
         start_bot()
 
 register = []
-
+blocked = False
 def start_bot():
     import telebot
     from main.models import User
@@ -25,13 +25,13 @@ def start_bot():
     bot = telebot.TeleBot(TOKEN)
     HELP = '''
     /help - Помощь с командами
-    /start - Регистрация
-    /link - Получить реферальную ссылку
-    /link_info - Информация о вашей реферальной ссылке
-    /game - Старт игры
-    /score - Количество твоих очков
-    /rating - ТОП игроки
-    '''
+/start - Регистрация
+/link - Получить реферальную ссылку
+/link_info - Информация о вашей реферальной ссылке
+/game - Старт игры
+/score - Количество твоих очков
+/rating - ТОП игроки
+'''
 
     @bot.message_handler(commands=['help'])
     def help(message):
@@ -42,9 +42,16 @@ def start_bot():
     def start(message):
         global register
         plus = False
+        #try:
+         #   user = User.objects.create(chat_id=message.chat.id)
+        #except:
+           # _ = 1
         user = User.objects.get_or_create(chat_id=message.chat.id)
+        if not user[0].name:
+            user[0].name = message.chat.id
+            user[0].save()
         sp = (message.text).split()
-        if user[0].name:
+        if str(user[0].name) != str(message.chat.id):
             bot.send_message(message.chat.id, f'Привет, {message.chat.username}!')
         elif message.chat.username:
             if len(sp) == 2:
@@ -178,6 +185,7 @@ def start_bot():
                 message.chat.id,
                 mes
             )
+            bot.send_message(message.chat.id, 'Посмотри, может ты попал в ТОП лучших игроков?) Вот ссылка: http://guess.slezkinis.ru/')
         else:
             bot.send_message(message.chat.id, 'Ты не зарегистрирован! Напиши /start для регистрации.')
 
@@ -195,6 +203,16 @@ def start_bot():
             bot.send_message('1509726530',f"Рассылка отправлена {len(User.objects.all())} пользователям (пользователю)")
         else:
             bot.send_message(message.chat.id, 'Вы не создатель!! Вам сюда лезть не надо:)')
+
+    @bot.message_handler(commands=['block'])
+    def block(message):
+        if int(message.chat.id) == 1509726530:
+            global blocked
+            blocked = not blocked
+            if blocked:
+                bot.send_message(message.chat.id, 'Бот заблокирован')
+            else:
+               bot.send_message(message.chat.id, 'Бот разблокирован')
 
 
     @bot.message_handler(commands=['send'])
@@ -239,6 +257,7 @@ def start_bot():
         else:
             otv = 'Пока нет ни одного участника! Стань первым!'
         bot.send_message(message.chat.id, otv)
+        bot.send_message(message.chat.id, 'Рейтинг всех игроков можешь посмотреть по ссылке:  http://guess.slezkinis.ru/')
 
 
     @bot.message_handler(content_types = ['text'])
@@ -257,25 +276,29 @@ def start_bot():
             else:
                 bot.send_message(message.chat.id, 'Такое имя занято! Придумай другое!')
         else:
+            global blocked
+            if blocked:
+                bot.send_message(message.chat.id, 'Технический перерыв! Повторите попытку попозже! Спасибо')
+                return
             users = User.objects.filter(chat_id=message.chat.id)
             if users:
                 user = User.objects.get(chat_id=message.chat.id)
                 correct_number = rnd.randint(1, 3)
                 a = (message.text).split()
                 if len(a) < 2:
-                    bot.send_message(message.chat.id, 'Ты указал только одно! Нужно указывать и ответ и ставку! Поробуй ещё раз!')
+                    bot.send_message(message.chat.id, 'Ты указал только одно! Нужно указывать и ответ и ставку! Попробуй ещё раз!')
                     return
                 otv, bid = (message.text).split()
                 try:
                     otv, bid = int(otv), int(bid)
                 except ValueError:
-                    bot.send_message(message.chat.id, 'Ставка или ответ не являются числами! Проверь и поробуй ещё раз!')
+                    bot.send_message(message.chat.id, 'Ставка или ответ не являются числами! Проверь и попробуй ещё раз!')
                     return
                 if bid < 0:
                     bot.send_message(message.chat.id, "Ставка не может быть отрицательной")
                     return
                 if bid == 0 and user.score != 0:
-                    bot.send_message(message.chat.id, "Неверная ставка")
+                    bot.send_message(message.chat.id, "Ты можешь что-то поставить! Рискуй)")
                     return
                 if otv < 1 or otv > 3:
                     bot.send_message(message.chat.id, 'Введённый ответ меньше 1 или больше 3! Проверь и попробуй ещё раз!')
@@ -294,7 +317,7 @@ def start_bot():
                 if otv == correct_number:
                     mes = ''
                     if score + bid + 1 == 1:
-                        mes = f'Ты выирал! Теперь у тебя {score + bid + 1} балл! Поздравляю! Давай сыграем ещё раз?'
+                        mes = f'Ты выиграл! Теперь у тебя {score + bid + 1} балл! Поздравляю! Давай сыграем ещё раз?'
                     elif score + bid + 1 >= 2 and score + bid + 1 <= 4:
                         mes = f'Ты выирал! Теперь у тебя {score + bid + 1} балла! Поздравляю! Давай сыграем ещё раз?'
                     else:
