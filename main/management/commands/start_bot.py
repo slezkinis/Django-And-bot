@@ -12,6 +12,7 @@ class Command(BaseCommand):
         print('START')
         start_bot()
 
+
 register = []
 blocked = False
 def start_bot():
@@ -42,10 +43,6 @@ def start_bot():
     def start(message):
         global register
         plus = False
-        #try:
-         #   user = User.objects.create(chat_id=message.chat.id)
-        #except:
-           # _ = 1
         user = User.objects.get_or_create(chat_id=message.chat.id)
         if not user[0].name:
             user[0].name = message.chat.id
@@ -203,6 +200,7 @@ def start_bot():
             bot.send_message('1509726530',f"Рассылка отправлена {len(User.objects.all())} пользователям (пользователю)")
         else:
             bot.send_message(message.chat.id, 'Вы не создатель!! Вам сюда лезть не надо:)')
+
 
     @bot.message_handler(commands=['block'])
     def block(message):
